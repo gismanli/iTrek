@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Document</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        .red {
+            background: red;
+        }
+        .blue {
+            background: blue;
+        }
+        .yellow {
+            background: yellow;
+        }
+        .gray {
+            background: gray;
+        }
+        .black {
+            background: black;
+        }
+    </style>
+</head>
+<body>
+    <div id="wrap">
+        <div class="item red">1</div>
+        <div class="item blue">2</div>
+        <div class="item yellow">3</div>
+        <div class="item gray">4</div>
+        <div class="item black">5</div>
+    </div>
+</body>
+<script src="./js/iTrek.js"></script>
+<script>
+    window.onload = function (argument) {
+        var ele = document.getElementById('wrap');
+        new iTrek(ele, {
+            isDebug: true
+        });
+    }
+</script>
+</html>

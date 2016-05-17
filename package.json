@@ -1,0 +1,36 @@
+{
+  "name": "itrek",
+  "version": "0.0.1",
+  "description": "移动端 触摸 滑动 移动 H5",
+  "main": "gulpfile.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/gismanli/iTrek.git"
+  },
+  "keywords": [
+    "移动端",
+    "触摸",
+    "滑动",
+    "移动",
+    "H5"
+  ],
+  "author": "gismanli@163.com",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/gismanli/iTrek/issues"
+  },
+  "homepage": "https://github.com/gismanli/iTrek#readme",
+  "devDependencies": {
+    "gulp": "^3.9.1",
+    "gulp-clean": "^0.3.2",
+    "gulp-cssmin": "^0.1.7",
+    "gulp-less": "^3.1.0",
+    "gulp-load-plugins": "^1.2.2",
+    "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^1.5.3",
+    "require-dir": "^0.3.0"
+  }
+}
