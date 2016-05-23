@@ -141,6 +141,7 @@
         me._touchStartX = e.touches[0].pageX;
         me._touchStartY = e.touches[0].pageY;
 
+        // 触摸初始位置
         me.touchInitPos = opts.isVertical ? e.touches[0].pageY : e.touches[0].pageX;
         me.trek1 = me.touchInitPos;
 
@@ -201,11 +202,11 @@
 
         me.totalDist = me.startPos + current - me.touchInitPos;
 
-        me._current.style.cssText += me._getTransform(me.totalDist + 'px');
+        me._current.style.cssText += me._getTransform(+me.totalDist + 'px');
         me.startPos = me.totalDist;
         
         //处理上一张和下一张
-        
+        console.log(me.totalDist)
         //露出下一张
         if (me.totalDist < 0) {
             if (me._next) {
@@ -217,6 +218,7 @@
         //露出上一张
         else {
             if (me._prev) {
+                // debugger
                 me.totalDist2 = me.startPosPrev + current - me.touchInitPos;
                 me._prev.style.cssText += me._getTransform(me.totalDist2 + 'px');
                 me.startPosPrev = me.totalDist2;
@@ -291,6 +293,7 @@
         me.totalDist = 0; //移动的总距离
         me.trek1 = 0; //每次移动的正负
         me.trek2 = 0; //每次移动的正负
+        me._delayTime = 150;
 
         // 全屏滑动
         if (opts.fullScr) {
@@ -406,7 +409,7 @@
     /** 
      * 滑动到上一页
      * @example
-        s1.next();
+        s1.prev();
      */
     iTrek.prototype.prev = function () {
         var me = this;
@@ -417,7 +420,7 @@
             return;
         }
 
-        if (me.index > 0 ) {
+        if (me.index > 0) {
             me.index--;
         }
         else {
@@ -436,19 +439,19 @@
         me._next.style.cssText += me.getDurationCss(+me.scrollDist + 'px');
         me._current.style.cssText += me.getDurationCss(0);
 
-        setTimeout(function () {
+        setTimeout(function() {
             if ($('.' + opts.playClass, me.wrap)) {
                 removeClass($('.' + opts.playClass, me.wrap), opts.playClass)
             }
 
             addClass(me._current, opts.playClass)
 
-            try {
-                opts.onslide.call(me,me.index);
-            }
-            catch (e) {
-                console.info(e)
-            }
+            // try {
+            //     opts.onslide.call(me,me.index);
+            // }
+            // catch (e) {
+            //     console.info(e)
+            // }
 
             var prevIndex = me.index - 1;
             if (prevIndex < 0) {
@@ -457,7 +460,7 @@
             }
 
             me._prev = me._tpl[prevIndex].cloneNode(true);
-            me._prev.style.cssText += me.getDurationCss(+me.scrollDist + 'px', 0);
+            me._prev.style.cssText += me.getDurationCss('-' + me.scrollDist + 'px', 0);
             me.wrap.insertBefore(me._prev, me._current);
 
         }, me._delayTime)
