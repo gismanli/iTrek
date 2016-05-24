@@ -42,34 +42,42 @@
         }
     }
 
+    
     var iTrek = function () {
         var args = _A(arguments, 0, 3);
         if (!args.length) {
             throw new Error('参数错误!');
         }
 
-        var opts = args.slice(-1)[0];
-        // console.log(args)
+        var opts = isObject(args.slice(-1)[0]) ? args.pop() : {};
+
         opts.dom = args[0];
 
         if (!opts.dom) {
-            throw new Error('容器不能为空!');
+            throw new Error('容器参数不能为空!');
         }
 
+        this.wrap = typeof opts.dom  === 'string' ? $(opts.dom) : opts.dom
+
+        if (!this.wrap) {
+            throw new Error('找不到对应的容器!');
+            return;
+        }
+
+        if (this.wrap['loaded']) return;
+
+        this.wrap['loaded'] = !0;
+
         this._opts = {
-            wrap: '.wrap',
-            item: '.item',
             playClass: 'play',
             index: 0,
-            noslide: [],
-            noslideBack: false, //当noslide生效的时候 是否允许往回滑动  默认不允许, 如果有需要可以开启
             speed: 400, //滑屏速度 单位: ms
             triggerDist: 30,//触发滑动的手指移动最小位移 单位: 像素
             isVertical: true,//垂直滑还是水平滑动
             useACC: true, //是否启用硬件加速 默认启用
             fullScr: true, //是否是全屏的 默认是. 如果是局部滑动,请设为false
-            preventMove: false, //是否阻止系统默认的touchmove移动事件,  默认不阻止, 该参数仅在局部滚动时有效,如果是局部滚动 如果为true 那么在这个区域滑动的时候 将不会滚动页面.  如果是全屏情况 则会阻止
-            lastLocate: true, //后退后定位到上次浏览的位置 默认开启
+            preventMove: false, //是否阻止系统默认的touchmove移动事件, 该参数仅在局部滚动时有效
+            isLoop: false, //是否开启循环滑动
             onslide: function (index) {} //滑动回调 参数是本对象
         }
 
@@ -79,29 +87,36 @@
 
         opts = null, args = null;
 
-        this._setting();
+        // this._setting();
 
-        this.fire('initialize');
+        // this.fire('initialize');
 
         this._renderWrapper();
+
         this._bindEvent();
 
-        this.fire('initialized');
+        // this.fire('initialized');
     }
 
-    iTrek.EVENTS = [
-        'initialize',
-        'initialized',
-        'renderComplete',
-        'slide',
-        'slideStart',
-        'slideEnd',
-        'slideChange',
-        'slideChanged',
-        'slideRestore',
-        'reset',
-        'destroy'
-    ];
+    /**
+     * [addEvent 重写addEventListener事件]
+     * @param {[DOM]}   dom  [dom元素]
+     * @param {[String]}   type [事件类型]
+     * @param {Function} fn   [callback]
+     */
+    iTrek.prototype.addEvent = function (dom, type, fn) {
+        if (document.addEventListener) {
+            dom.addEventListener(type, fn, false);
+        }
+        else if (document.attachEvent) {
+            dom.attachEvent('on' + type, fn);
+        }
+        else {
+            dom['on' + type] = fn;
+        }
+        
+        dom['Listener-' + type] = !0;
+    }
 
     iTrek.prototype._bindEvent = function () {
         var me = this;
@@ -111,11 +126,10 @@
 
         handleElm.addEventListener('touchstart', function (e) {
             me._touchstart(e);
-        }, false);
+        }, false)
 
         handleElm.addEventListener('touchmove', function (e) {
             me._touchmove(e)
-            //修复手Q中局部使用时的一个bug
             if (!opts.fullScr) {
                 e.stopPropagation();
                 e.preventDefault();
@@ -129,6 +143,12 @@
         handleElm.addEventListener('touchcancel',function (e) {
             me._touchend(e);
         }, false);
+
+        if (opts.fullScr || opts.preventMove) {
+            handleElm.addEventListener('touchmove', function (e) {
+                e.preventDefault();
+            }, false)
+        }
     }
 
     iTrek.prototype._touchstart = function (e) {
@@ -206,7 +226,7 @@
         me.startPos = me.totalDist;
         
         //处理上一张和下一张
-        console.log(me.totalDist)
+
         //露出下一张
         if (me.totalDist < 0) {
             if (me._next) {
@@ -254,7 +274,7 @@
             me._prev.style.cssText += me.getDurationCss('-' + me.scrollDist + 'px');
         }
         if (me._next) {
-           me._next.style.cssText += me.getDurationCss(+me.scrollDist + 'px');
+            me._next.style.cssText += me.getDurationCss(+me.scrollDist + 'px');
         }
 
         me.trek2 = 0;
@@ -264,28 +284,13 @@
         var me = this;
         var opts = me._opts;
 
-        me.wrap = typeof opts.dom  === 'string' ? $(opts.dom) : opts.dom
-
-        if (!me.wrap) {
-            throw new Error('容器空!');
-            return;
-        }
-
         me.index = opts.index
 
         me._tpl = me.wrap.cloneNode(true);
-        me._tpl = opts.item
+        // debugger
+        me._tpl = (opts.item
             ? me._tpl.querySelectorAll(opts.item)
-            : me._tpl.children;
-
-        for (var i = 0; i < me._tpl.length; i++) {
-            me._tpl[i].style.cssText += 'display:block;'
-                + 'position:absolute;'
-                + 'left:0;'
-                + 'top:0;'
-                + 'width:100%;'
-                + 'height:100%';
-        };
+            : me._tpl.children);
 
         me.length = me._tpl.length; //总页数数据
         me.touchInitPos = 0; //手指初始位置
@@ -293,7 +298,17 @@
         me.totalDist = 0; //移动的总距离
         me.trek1 = 0; //每次移动的正负
         me.trek2 = 0; //每次移动的正负
+
         me._delayTime = 150;
+
+        for (var i = 0; i < me.length; i++) {
+            me._tpl[i].style.cssText += 'display:block;'
+                + 'position:absolute;'
+                + 'left:0;'
+                + 'top:0;'
+                + 'width:100%;'
+                + 'height:100%';
+        };
 
         // 全屏滑动
         if (opts.fullScr) {
@@ -322,9 +337,9 @@
         }
     };
 
-
     iTrek.prototype._setHTML = function(index) {
         var me = this;
+        var opts = me._opts;
 
         if (index && index > 0) {
             me.index = +index;
@@ -337,6 +352,11 @@
         // 前一页
         if (me.index > 0) {
             me._prev = me._tpl[me.index - 1].cloneNode(true);
+            me._prev.style.cssText += me._getTransform('-' + me.scrollDist + 'px');
+            initDom.appendChild(me._prev)
+        }
+        else if (opts.isLoop) {
+            me._prev = me._tpl[me.length - 1].cloneNode(true);
             me._prev.style.cssText += me._getTransform('-' + me.scrollDist + 'px');
             initDom.appendChild(me._prev)
         }
@@ -383,28 +403,12 @@
     };
 
     /**
-     * 基本设置
+     * 自动播放
      */
-    iTrek.prototype._setting = function() {
-        var me = this;
 
-        var opts = this._opts;
-
-        // events
-        me.events = {};
-        iTrek.EVENTS.forEach(function (eventName) {
-            var fn = opts['on' + eventName.toLowerCase()];
-            typeof fn === 'function' && me.on(eventName, fn, 1);
-        });
-
-        /*
-            console.log
-         */
-        me.log = opts.isDebug ? function () {
-            global.console.log.apply(global.console, arguments);
-        } : noop;
-
-    };
+    // iTrek.prototype._autoPlay = function () {
+    //     this.delay > 0 ? global.setTimeout(this.play.bind(this), this.delay) : this.play();
+    // };
 
     /** 
      * 滑动到上一页
@@ -422,6 +426,9 @@
 
         if (me.index > 0) {
             me.index--;
+        }
+        else if (opts.isLoop && me.index === 0) {
+            me.index = me.length - 1;
         }
         else {
             me._itemReset();
@@ -446,17 +453,19 @@
 
             addClass(me._current, opts.playClass)
 
-            // try {
-            //     opts.onslide.call(me,me.index);
-            // }
-            // catch (e) {
-            //     console.info(e)
-            // }
+            try {
+                opts.onslide.call(me, me.index);
+            }
+            catch (e) {
+                console.info(e)
+            }
 
             var prevIndex = me.index - 1;
             if (prevIndex < 0) {
                 prevIndex =  me.length - 1;
-                return false;
+                if (!opts.isLoop) {
+                    return false;
+                }
             }
 
             me._prev = me._tpl[prevIndex].cloneNode(true);
@@ -483,6 +492,9 @@
         if (me.index < me.length - 1) {
             me.index++;
         }
+        else if (me.index === me.length - 1) {
+            me.index = 0;
+        }
         else {
             me._itemReset();
             return false;
@@ -507,55 +519,27 @@
             addClass(me._current, opts.playClass)
 
             try {
-                opts.onslide.call(me,me.index);
+                opts.onslide.call(me, me.index);
             }
             catch (e) {
                 console.info(e)
             }
 
             var nextIndex = me.index + 1;
-            if (nextIndex >= me.length) {
-                return false;
-            }
 
+            if (nextIndex >= me.length) {
+                if (opts.isLoop) {
+                    nextIndex = 0;
+                }
+                else {
+                    return false;
+                }
+            }
             me._next = me._tpl[nextIndex].cloneNode(true);
             me._next.style.cssText += me.getDurationCss(+me.scrollDist + 'px', 0);
             me.wrap.appendChild(me._next);
 
         }, me._delayTime)
-    },
-
-    /**
-     * 事件
-     */
-    iTrek.prototype.on = function(eventName, func, force) {
-        if (inArray(eventName, iTrek.EVENTS) && typeof func === 'function') {
-            !(eventName in this.events) && (this.events[eventName] = []);
-            if (!force) {
-                this.events[eventName].push(func);
-            } else {
-                this.events[eventName].unshift(func);
-            }
-        }
-        return this;
-    };
-
-    /**
-        触发
-     */
-    iTrek.prototype.fire = function (eventNames) {
-        var args = _A(arguments, 1);
-        eventNames.split(/\x20+/).forEach(function (eventName) {
-            this.log('[EVENT FIRE]:', eventName, args);
-            if (eventName in this.events) {
-                var funcs = this.events[eventName];
-                for (var i = 0; i < funcs.length; i++) {
-                    typeof funcs[i] === 'function'
-                    && funcs[i].apply
-                    && funcs[i].apply(this, args);
-                }
-            }
-        }.bind(this));
     }
 
     /* CMD */

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Document</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
     <style>
         * {
             margin: 0;
@@ -23,11 +24,22 @@
         .black {
             background: black;
         }
+        #wrap1 {
+            width: 100%;
+            height: 200px;
+        }
     </style>
 </head>
 <body>
     <div id="wrap">
-        <div class="item red">1</div>
+        <div class="item red">
+            <div id="wrap1">
+                <img src="http://be-fe.github.io/static/images/saber/0.jpg" width="100%" alt="">
+                <img src="http://be-fe.github.io/static/images/saber/1.jpg" width="100%" alt="">
+                <img src="http://be-fe.github.io/static/images/saber/2.jpg" width="100%" alt="">
+                <img src="http://be-fe.github.io/static/images/saber/3.jpg" width="100%" alt="">
+            </div>
+        </div>
         <div class="item blue">2</div>
         <div class="item yellow">3</div>
         <div class="item gray">4</div>
@@ -37,9 +49,22 @@
 <script src="./js/iTrek.js"></script>
 <script>
     window.onload = function (argument) {
-        var ele = document.getElementById('wrap');
-        new iTrek(ele, {
-            isDebug: true
+        new iTrek('#wrap', {
+            item: '.item',
+            onslide: function(index){
+                if (index === 0) {
+                    new iTrek('#wrap1', {
+                        isVertical: false,
+                        fullScr: false,
+                        isLoop: true
+                    });
+                }
+            }
+        });
+        new iTrek('#wrap1', {
+            isVertical: false,
+            fullScr: false,
+            isLoop: true
         });
     }
 </script>
