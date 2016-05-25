@@ -41,7 +41,6 @@
             o.className = o.className.replace(new RegExp('\\s*\\b' + cls + '\\b', 'g'),'');
         }
     }
-
     
     var iTrek = function () {
         var args = _A(arguments, 0, 3);
@@ -69,15 +68,17 @@
         this.wrap['loaded'] = !0;
 
         this._opts = {
-            playClass: 'play',
-            index: 0,
-            speed: 400, //滑屏速度 单位: ms
-            triggerDist: 30,//触发滑动的手指移动最小位移 单位: 像素
-            isVertical: true,//垂直滑还是水平滑动
+            playClass: 'play', // 当前屏增加的class名称
+            index: 0, //默认在第几屏 默认第一屏
+            speed: 400, //滑屏速度 单位: ms 默认400
+            triggerDist: 30,//触发滑动的手指移动最小位移 单位: 像素 默认30
+            isVertical: true,//垂直滑还是水平滑动 默认竖屏
             useACC: true, //是否启用硬件加速 默认启用
-            fullScr: true, //是否是全屏的 默认是. 如果是局部滑动,请设为false
-            preventMove: false, //是否阻止系统默认的touchmove移动事件, 该参数仅在局部滚动时有效
-            isLoop: false, //是否开启循环滑动
+            fullScr: true, //是否是全屏的 默认true 如果是局部滑动,请设为false
+            preventMove: false, //是否阻止系统默认的touchmove移动事件, 该参数仅在局部滚动时有效 默认false
+            isLoop: false, //是否开启循环滑动 默认false
+            autoPlay: true,
+            timing: 'cubic-bezier(0.25,0.1,0.25,1)', //过渡效果速度曲线 默认linear 具体参考CSS3属性transition-timing-funciton
             onslide: function (index) {} //滑动回调 参数是本对象
         }
 
@@ -269,12 +270,12 @@
         var me = this;
         var opts = me._opts;
 
-        me._current.style.cssText += me.getDurationCss(0)
+        me._current.style.cssText += me._getDurationCss(0)
         if (me._prev) {
-            me._prev.style.cssText += me.getDurationCss('-' + me.scrollDist + 'px');
+            me._prev.style.cssText += me._getDurationCss('-' + me.scrollDist + 'px');
         }
         if (me._next) {
-            me._next.style.cssText += me.getDurationCss(+me.scrollDist + 'px');
+            me._next.style.cssText += me._getDurationCss(+me.scrollDist + 'px');
         }
 
         me.trek2 = 0;
@@ -307,7 +308,8 @@
                 + 'left:0;'
                 + 'top:0;'
                 + 'width:100%;'
-                + 'height:100%';
+                + 'height:100%;'
+                + me._getTransitionTiming(opts.timing);
         };
 
         // 全屏滑动
@@ -382,24 +384,35 @@
         me.wrap.appendChild(initDom);
     };
 
-    iTrek.prototype.getDurationCss = function (param, speed) {
+    iTrek.prototype._getDurationCss = function (param, speed) {
         return ('-webkit-transition-duration:' + (speed || this._opts.speed) + 'ms;'
-            + this._getTransform(param)
             + 'transition-duration:' + (speed || this._opts.speed) + 'ms;'
             + this._getTransform(param));
     }
-
-    /*
-        获取transform的CSS
+    /**
+     * [_getTransitionTiming 过渡效果速度曲线]
+     * @param  {[String]} tim [曲线]
+     * @return {[String]}     [css]
+     */
+    iTrek.prototype._getTransitionTiming = function (tim) {
+        return ('transition-timing-function: ' + tim + ';'
+            + '-moz-transition-timing-function: ' + tim + ';'
+            + '-webkit-transition-timing-function: ' + tim + ';'
+            + '-o-transition-timing-function: ' + tim + ';');
+    };
+    /**
+     * [_getTransform 获取transform的CSS]
+     * @param  {[type]}  [位移量]
+     * @return {[String]}  [CSS样式字符串]
      */
     iTrek.prototype._getTransform = function(dist) {
         var tmp = this._opts.useACC;
         var pos = this._opts.isVertical ? '0, ' + dist : dist + ', 0';
-        return '-webkit-transform:' + (tmp ? 'translate3d(' + pos + ', 0);' : 'translate(' + pos + ');')
+        return ('-webkit-transform:' + (tmp ? 'translate3d(' + pos + ', 0);' : 'translate(' + pos + ');')
             + '-moz-transform:' + (tmp ? 'translate3d(' + pos + ', 0);' : 'translate(' + pos + ');')
             + '-ms-transform:' + (tmp ? 'translate3d(' + pos + ', 0);' : 'translate(' + pos + ');')
             + '-o-transform:' + (tmp ? 'translate3d(' + pos + ', 0);' : 'translate(' + pos + ');')
-            + 'transform:' + (tmp ? 'translate3d(' + pos + ', 0);' : 'translate(' + pos + ');');
+            + 'transform:' + (tmp ? 'translate3d(' + pos + ', 0);' : 'translate(' + pos + ');'));
     };
 
     /**
@@ -443,8 +456,8 @@
         me._current = me._prev;
         me._prev = null;
 
-        me._next.style.cssText += me.getDurationCss(+me.scrollDist + 'px');
-        me._current.style.cssText += me.getDurationCss(0);
+        me._next.style.cssText += me._getDurationCss(+me.scrollDist + 'px');
+        me._current.style.cssText += me._getDurationCss(0);
 
         setTimeout(function() {
             if ($('.' + opts.playClass, me.wrap)) {
@@ -469,7 +482,7 @@
             }
 
             me._prev = me._tpl[prevIndex].cloneNode(true);
-            me._prev.style.cssText += me.getDurationCss('-' + me.scrollDist + 'px', 0);
+            me._prev.style.cssText += me._getDurationCss('-' + me.scrollDist + 'px', 0);
             me.wrap.insertBefore(me._prev, me._current);
 
         }, me._delayTime)
@@ -508,8 +521,8 @@
         me._current = me._next;
         me._next = null;
 
-        me._prev.style.cssText += me.getDurationCss('-' + me.scrollDist + 'px');
-        me._current.style.cssText += me.getDurationCss(0);
+        me._prev.style.cssText += me._getDurationCss('-' + me.scrollDist + 'px');
+        me._current.style.cssText += me._getDurationCss(0);
 
         setTimeout(function () {
             if ($('.' + opts.playClass, me.wrap)) {
@@ -536,7 +549,7 @@
                 }
             }
             me._next = me._tpl[nextIndex].cloneNode(true);
-            me._next.style.cssText += me.getDurationCss(+me.scrollDist + 'px', 0);
+            me._next.style.cssText += me._getDurationCss(+me.scrollDist + 'px', 0);
             me.wrap.appendChild(me._next);
 
         }, me._delayTime)
